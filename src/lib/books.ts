@@ -58,36 +58,54 @@ export function chapterSlug(id: string): string {
   return last.replace(/\.(md|mdx)$/, '');
 }
 
+/** Display order and button label for each language we publish in. */
+const LANGS: Record<string, { rank: number; label: string }> = {
+  en: { rank: 1, label: 'EN' },
+  es: { rank: 2, label: 'ES' },
+  pt: { rank: 3, label: 'PT' },
+  hi: { rank: 4, label: 'हि' },
+  ru: { rank: 5, label: 'РУ' },
+};
+
+/**
+ * Strip a book's own language suffix to get the series id shared by its
+ * translations. Uses the book's declared `lang` rather than a fixed list,
+ * so adding a translation needs no change here.
+ * "bhagavad-gita-pt" (lang "pt") -> "bhagavad-gita"
+ */
+function seriesId(id: string, lang: string): string {
+  return id.endsWith(`-${lang}`) ? id.slice(0, -(lang.length + 1)) : id;
+}
+
 /**
  * Build the language-sibling list for the current book/chapter.
- * Matches sibling books by stripping the `-en|-es|-hi` suffix, then
- * picks the chapter in each sibling that shares the same `order`.
+ * Matches sibling books by series id, then picks the chapter in each
+ * sibling that shares the same `order`.
  * If no chapter with that order exists in a sibling, fall back to its cover.
  *
  * Pass `currentOrder = null` for cover pages — every sibling will resolve to its cover.
  */
 export async function getLangSiblings(currentBookId: string, currentOrder: number | null) {
   const books = await getBooks();
-  const base = currentBookId.replace(/-(en|es|hi)$/, '');
-  const order = { en: 1, es: 2, hi: 3 } as Record<string, number>;
+  const current = books.find(b => b.id === currentBookId);
+  if (!current) return [];
+  const base = seriesId(current.id, current.lang);
 
   const siblings = [];
   for (const b of books) {
-    const otherBase = b.id.replace(/-(en|es|hi)$/, '');
-    if (otherBase !== base) continue;
+    if (seriesId(b.id, b.lang) !== base) continue;
     let href = `/${b.id}`;
     if (currentOrder !== null) {
       const chapters = await getChapters(b.id);
       const match = chapters.find(c => c.data.order === currentOrder);
       if (match) href = `/${b.id}/${chapterSlug(match.id)}`;
     }
-    const label = b.lang === 'hi' ? 'हि' : b.lang.toUpperCase();
     siblings.push({
       lang: b.lang,
-      label,
+      label: LANGS[b.lang]?.label ?? b.lang.toUpperCase(),
       href,
       isCurrent: b.id === currentBookId,
     });
   }
-  return siblings.sort((a, c) => (order[a.lang] ?? 99) - (order[c.lang] ?? 99));
+  return siblings.sort((a, c) => (LANGS[a.lang]?.rank ?? 99) - (LANGS[c.lang]?.rank ?? 99));
 }
