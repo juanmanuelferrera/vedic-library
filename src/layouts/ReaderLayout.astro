@@ -7,6 +7,7 @@ import ContentsDrawer from '../components/ContentsDrawer.astro';
 import SettingsDrawer from '../components/SettingsDrawer.astro';
 import SearchDialog from '../components/SearchDialog.astro';
 import ReadingProgress from '../components/ReadingProgress.astro';
+import { ClientRouter } from 'astro:transitions';
 
 interface LangSibling {
   lang: string;
@@ -32,6 +33,9 @@ const { bookId, bookTitle, bookLang, pageTitle, chapters, currentSlug, langs = [
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>{pageTitle} · {bookTitle}</title>
+    {/* Client-side routing: a real page load drops fullscreen, so without this
+        a reader in fullscreen cannot reach the next chapter. */}
+    <ClientRouter />
     <script is:inline>
       (function () {
         var html = document.documentElement;
@@ -65,56 +69,30 @@ const { bookId, bookTitle, bookLang, pageTitle, chapters, currentSlug, langs = [
 
     <script is:inline>
       (function () {
-        // Drawer open/close
-        function bind(btnId, drawerId, overlayId) {
-          var btn = document.getElementById(btnId);
-          var drawer = document.getElementById(drawerId);
-          var overlay = document.getElementById(overlayId);
-          if (!btn || !drawer || !overlay) return;
-          function open()  { drawer.classList.add('open'); overlay.classList.add('open'); }
-          function close() { drawer.classList.remove('open'); overlay.classList.remove('open'); }
-          btn.addEventListener('click', open);
-          overlay.addEventListener('click', close);
-          window.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape') close();
-          });
+        // Chapters are swapped in by the client router, so anything bound to an
+        // element has to be bound again on each swap. Marking the element keeps
+        // that idempotent; window/document listeners are attached once, since
+        // those objects survive navigation.
+        function once(el, ev, fn, mark) {
+          if (!el || el.dataset[mark]) return;
+          el.dataset[mark] = '1';
+          el.addEventListener(ev, fn);
         }
-        bind('open-contents', 'contents-drawer', 'contents-overlay');
-        bind('open-settings', 'settings-drawer', 'settings-overlay');
 
-        // Fullscreen
-        var fsBtn = document.getElementById('toggle-fullscreen');
-        if (fsBtn) {
-          fsBtn.addEventListener('click', function () {
-            if (!document.fullscreenElement) {
-              document.documentElement.requestFullscreen().catch(function () {});
-            } else {
-              document.exitFullscreen();
-            }
-          });
-          document.addEventListener('fullscreenchange', function () {
-            document.body.classList.toggle('is-fullscreen', !!document.fullscreenElement);
+        function closeDrawers() {
+          document.querySelectorAll('.drawer, .drawer-overlay').forEach(function (n) {
+            n.classList.remove('open');
           });
         }
 
-        // Keyboard shortcuts: c, s, f, ← →
-        window.addEventListener('keydown', function (e) {
-          var t = e.target;
-          if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return;
-          if (e.key === 'c') document.getElementById('open-contents')?.click();
-          if (e.key === 's') document.getElementById('open-settings')?.click();
-          if (e.key === 'f') document.getElementById('toggle-fullscreen')?.click();
-          if (e.key === 'ArrowLeft') {
-            var p = document.querySelector('.prev-next .prev-pill');
-            if (p) p.click();
+        function toggleFullscreen() {
+          if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(function () {});
+          } else {
+            document.exitFullscreen();
           }
-          if (e.key === 'ArrowRight') {
-            var n = document.querySelector('.prev-next .next-pill');
-            if (n) n.click();
-          }
-        });
+        }
 
-        // Settings: persist + apply on click
         function refreshActiveStates() {
           var html = document.documentElement;
           document.querySelectorAll('[data-setting]').forEach(function (group) {
@@ -125,17 +103,102 @@ const { bookId, bookTitle, bookLang, pageTitle, chapters, currentSlug, langs = [
             });
           });
         }
-        document.querySelectorAll('[data-setting] button').forEach(function (b) {
-          b.addEventListener('click', function () {
-            var group = b.closest('[data-setting]');
-            var key = group.dataset.setting;
-            var val = b.dataset.value;
-            document.documentElement.dataset[key] = val;
-            try { localStorage.setItem('wb-' + key, val); } catch (e) {}
-            refreshActiveStates();
+
+        function bindPage() {
+          [['open-contents', 'contents-drawer', 'contents-overlay'],
+           ['open-settings', 'settings-drawer', 'settings-overlay']].forEach(function (ids) {
+            var btn = document.getElementById(ids[0]);
+            var drawer = document.getElementById(ids[1]);
+            var overlay = document.getElementById(ids[2]);
+            if (!btn || !drawer || !overlay) return;
+            once(btn, 'click', function () {
+              drawer.classList.add('open'); overlay.classList.add('open');
+            }, 'wbOpen');
+            once(overlay, 'click', closeDrawers, 'wbClose');
           });
-        });
-        refreshActiveStates();
+
+          once(document.getElementById('toggle-fullscreen'), 'click', toggleFullscreen, 'wbFs');
+
+          // The swapped-in body does not carry the class, but the document is
+          // still genuinely fullscreen — restore it so the chrome stays hidden.
+          document.body.classList.toggle('is-fullscreen', !!document.fullscreenElement);
+
+          // The <html> dataset can be reset by a swap; reapply the saved prefs.
+          var html = document.documentElement;
+          ['theme', 'font', 'size', 'justify'].forEach(function (k) {
+            try {
+              var v = localStorage.getItem('wb-' + k);
+              if (v) html.dataset[k] = v;
+            } catch (e) {}
+          });
+
+          document.querySelectorAll('[data-setting] button').forEach(function (b) {
+            once(b, 'click', function () {
+              var group = b.closest('[data-setting]');
+              var key = group.dataset.setting;
+              document.documentElement.dataset[key] = b.dataset.value;
+              try { localStorage.setItem('wb-' + key, b.dataset.value); } catch (e) {}
+              refreshActiveStates();
+            }, 'wbSet');
+          });
+          refreshActiveStates();
+        }
+
+        if (!window.__wbGlobals) {
+          window.__wbGlobals = true;
+
+          document.addEventListener('fullscreenchange', function () {
+            document.body.classList.toggle('is-fullscreen', !!document.fullscreenElement);
+          });
+
+          // Keyboard shortcuts: c, s, f, Escape, ← →
+          window.addEventListener('keydown', function (e) {
+            var t = e.target;
+            if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return;
+            if (e.key === 'Escape') closeDrawers();
+            if (e.key === 'c') document.getElementById('open-contents')?.click();
+            if (e.key === 's') document.getElementById('open-settings')?.click();
+            if (e.key === 'f') toggleFullscreen();
+            if (e.key === 'ArrowLeft') document.querySelector('.prev-next .prev-pill')?.click();
+            if (e.key === 'ArrowRight') document.querySelector('.prev-next .next-pill')?.click();
+          });
+
+          // Swipe left/right to turn the page on touch devices.
+          var sx = 0, sy = 0, st = 0, tracking = false;
+          document.addEventListener('touchstart', function (e) {
+            if (e.touches.length !== 1) { tracking = false; return; }
+            // Not a page turn if a drawer is open, or if the finger landed on
+            // something that scrolls sideways itself (wide tables, code).
+            if (document.querySelector('.drawer.open')) { tracking = false; return; }
+            var el = e.target;
+            while (el && el !== document.body) {
+              if (el.scrollWidth > el.clientWidth + 4) { tracking = false; return; }
+              el = el.parentElement;
+            }
+            sx = e.touches[0].clientX;
+            sy = e.touches[0].clientY;
+            st = Date.now();
+            tracking = true;
+          }, { passive: true });
+
+          document.addEventListener('touchend', function (e) {
+            if (!tracking) return;
+            tracking = false;
+            var t = e.changedTouches[0];
+            var dx = t.clientX - sx, dy = t.clientY - sy;
+            // Horizontal, decisive, and not a slow drag.
+            if (Math.abs(dx) < 70) return;
+            if (Math.abs(dx) < Math.abs(dy) * 1.8) return;
+            if (Date.now() - st > 700) return;
+            var sel = dx < 0 ? '.prev-next .next-pill' : '.prev-next .prev-pill';
+            document.querySelector(sel)?.click();
+          }, { passive: true });
+
+          // Fires on first load and after every client-side navigation.
+          document.addEventListener('astro:page-load', bindPage);
+        }
+
+        bindPage();
       })();
     </script>
   </body>
