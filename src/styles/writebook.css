@@ -695,18 +695,35 @@ html[data-justify="on"] article p { text-align: justify; hyphens: auto; }
   box-shadow: var(--panel-shadow);
 }
 /* Source credit on a book cover */
+/* The cover fills the viewport so the credit can sit at the foot of the
+   screen rather than tucked under the button — it is read on phones. */
+body.cover {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+}
+body.cover .cover-page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin-block: 5rem 0;
+  padding-bottom: 2rem;
+}
+
 .cover-page .credit {
-  margin-top: 2.5rem;
+  margin-top: auto;       /* pushed to the bottom of the cover */
+  padding-top: 5rem;      /* but never crowding the button above it */
   font-family: var(--font-sans);
-  font-size: 0.82rem;
-  color: var(--muted);
+  font-size: 0.95rem;
+  color: var(--fg);
 }
 .cover-page .credit a {
-  color: var(--muted);
+  color: var(--fg);
+  font-weight: 600;
   text-decoration: underline;
-  text-underline-offset: 2px;
+  text-underline-offset: 3px;
 }
-.cover-page .credit a:hover { color: var(--fg); }
+.cover-page .credit a:hover { text-decoration-thickness: 2px; }
 
 /* Marker in the contents for a section served in English */
 .drawer.contents .toc-en {
