@@ -38,13 +38,17 @@ One directory per book *and* language, named `<book>-<lang>`:
 
 ```
 src/content/books/
-  bhagavad-gita-en/
+  bg-en/
     book.json          ← metadata: title, author, lang, license
-    01-cover.mdx
-    06-chapter-01.mdx
+    cover.mdx
+    preface.mdx        ← front matter: short, localized slug
+    1.mdx              ← chapters: the number is the slug (/bg-en/1)
     ...
-  bhagavad-gita-es/
+  bg-es/
 ```
+
+The filename is the URL slug, and it carries no ordering information — `order` in
+the frontmatter is what sorts the book and what matches sections across languages.
 
 Two rules keep the translations in sync:
 

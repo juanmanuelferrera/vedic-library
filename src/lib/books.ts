@@ -106,7 +106,7 @@ const LANGS: Record<string, { rank: number; label: string }> = {
  * Strip a book's own language suffix to get the series id shared by its
  * translations. Uses the book's declared `lang` rather than a fixed list,
  * so adding a translation needs no change here.
- * "bhagavad-gita-pt" (lang "pt") -> "bhagavad-gita"
+ * "bg-pt" (lang "pt") -> "bg"
  */
 function seriesId(id: string, lang: string): string {
   return id.endsWith(`-${lang}`) ? id.slice(0, -(lang.length + 1)) : id;

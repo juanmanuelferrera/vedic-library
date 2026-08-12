@@ -56,11 +56,11 @@ npm run preview
 
 - `https://vedic-library.pages.dev/` → Library, **una tarjeta por libro** (no una por idioma),
   con las etiquetas de idioma disponibles en cada tarjeta.
-- `https://vedic-library.pages.dev/bhagavad-gita-en/06-chapter-01` → lector completo:
+- `https://vedic-library.pages.dev/bg-en/1` → lector completo:
   cabecera, prev/next, índice lateral, pantalla completa y búsqueda.
 - El selector de idioma de ese capítulo ofrece EN · ES · PT · हि · РУ y lleva **al mismo capítulo**,
   no a la portada.
-- `https://vedic-library.pages.dev/bhagavad-gita-hi/03-preface` → sección sin traducir:
+- `https://vedic-library.pages.dev/bg-hi/bhumika` → sección sin traducir:
   muestra el texto inglés con el aviso en el idioma del lector.
 - El sitemap apunta al dominio correcto:
   `curl -s https://vedic-library.pages.dev/sitemap-0.xml | head`.
