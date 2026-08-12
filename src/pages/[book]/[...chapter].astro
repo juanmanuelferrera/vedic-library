@@ -29,7 +29,9 @@ const UNTRANSLATED: Record<string, string> = {
 
 const { entry, bookMeta, fallback } = Astro.props;
 const { book: bookId, chapter: currentSlug } = Astro.params;
-const chapters = (await getSections(bookId!)).map(s => s.entry);
+const sections = await getSections(bookId!);
+const chapters = sections.map(s => s.entry);
+const fallbackSlugs = sections.filter(s => s.fallback).map(s => chapterSlug(s.entry.id));
 const { prev, next, index, total } = await getNeighbours(bookId!, currentSlug!);
 const langs = await getLangSiblings(bookId!, entry.data.order);
 
@@ -43,6 +45,7 @@ const { Content } = await render(entry);
   chapters={chapters}
   currentSlug={currentSlug}
   langs={langs}
+  fallbackSlugs={fallbackSlugs}
 >
   <h1>{entry.data.title}</h1>
   {fallback && (

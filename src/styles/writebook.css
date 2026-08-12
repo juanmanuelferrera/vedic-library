@@ -694,6 +694,21 @@ html[data-justify="on"] article p { text-align: justify; hyphens: auto; }
   transform: translateY(-2px);
   box-shadow: var(--panel-shadow);
 }
+/* Marker in the contents for a section served in English */
+.drawer.contents .toc-en {
+  display: inline-block;
+  margin-left: 0.5em;
+  padding: 0.05em 0.35em;
+  border: 1px solid var(--rule);
+  border-radius: var(--pill-radius);
+  font-family: var(--font-sans);
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  vertical-align: 0.12em;
+}
+
 /* Notice on a section served in English for want of a translation */
 .untranslated {
   font-family: var(--font-sans);

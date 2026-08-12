@@ -2,7 +2,7 @@
 import '../../styles/reset.css';
 import '../../styles/themes.css';
 import '../../styles/writebook.css';
-import { getBooks, getBook, getChapters, chapterSlug, getLangSiblings } from '../../lib/books';
+import { getBooks, getBook, getSections, chapterSlug, getLangSiblings } from '../../lib/books';
 
 export async function getStaticPaths() {
   const books = await getBooks();
@@ -12,7 +12,8 @@ export async function getStaticPaths() {
 const { book: bookId } = Astro.params;
 const book = await getBook(bookId!);
 if (!book) throw new Error(`Book not found: ${bookId}`);
-const chapters = await getChapters(bookId!);
+const sections = await getSections(bookId!);
+const chapters = sections.map(s => s.entry);
 const firstReadable = chapters.find(c => !c.data.isCover) ?? chapters[0];
 const startSlug = firstReadable ? chapterSlug(firstReadable.id) : '';
 const langs = await getLangSiblings(bookId!, null);

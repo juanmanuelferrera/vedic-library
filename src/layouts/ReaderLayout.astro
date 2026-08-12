@@ -22,8 +22,9 @@ interface Props {
   chapters: any[];
   currentSlug?: string;
   langs?: LangSibling[];
+  fallbackSlugs?: string[];
 }
-const { bookId, bookTitle, bookLang, pageTitle, chapters, currentSlug, langs = [] } = Astro.props;
+const { bookId, bookTitle, bookLang, pageTitle, chapters, currentSlug, langs = [], fallbackSlugs = [] } = Astro.props;
 ---
 <!doctype html>
 <html lang={bookLang}>
@@ -57,6 +58,7 @@ const { bookId, bookTitle, bookLang, pageTitle, chapters, currentSlug, langs = [
       bookTitle={bookTitle}
       chapters={chapters}
       currentSlug={currentSlug}
+      fallbackSlugs={fallbackSlugs}
     />
     <SettingsDrawer />
     <SearchDialog />

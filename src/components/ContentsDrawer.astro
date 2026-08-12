@@ -6,8 +6,11 @@ interface Props {
   bookTitle: string;
   chapters: Chapter[];
   currentSlug?: string;
+  /** Slugs served in English because this language has no translation yet. */
+  fallbackSlugs?: string[];
 }
-const { bookId, bookTitle, chapters, currentSlug } = Astro.props;
+const { bookId, bookTitle, chapters, currentSlug, fallbackSlugs = [] } = Astro.props;
+const untranslated = new Set(fallbackSlugs);
 ---
 <div class="drawer-overlay" id="contents-overlay"></div>
 <aside class="drawer contents" id="contents-drawer" aria-label="Contents">
@@ -21,7 +24,7 @@ const { bookId, bookTitle, chapters, currentSlug } = Astro.props;
           <a
             href={`/${bookId}/${slug}`}
             class={isCurrent ? 'current' : ''}
-          >{c.data.title}</a>
+          >{c.data.title}{untranslated.has(slug) && <span class="toc-en" title="Shown in English">EN</span>}</a>
         </li>
       );
     })}
