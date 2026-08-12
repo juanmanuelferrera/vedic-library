@@ -1,100 +1,133 @@
-# Deploy a Cloudflare Pages (gratis, ~10 minutos)
+# Deploy a Cloudflare Pages
 
-Esta guía levanta la Vedic Library en Cloudflare Pages a coste cero.
-El sitio ya está desplegado en <https://vedic-library.pages.dev>; un dominio propio es opcional (~10 €/año).
+El sitio está en <https://vedic-library.pages.dev>, alojado gratis en Cloudflare Pages.
+
+> **Importante:** este proyecto usa **subida directa** (*direct upload*), no está conectado a Git.
+> `git push` **no** despliega nada. Cada publicación se hace a mano con `wrangler`.
+> Puedes confirmarlo con `wrangler pages project list`: la columna *Git Provider* pone `No`.
 
 ## Requisitos previos
 
-- Cuenta gratis en [github.com](https://github.com).
-- Cuenta gratis en [cloudflare.com](https://cloudflare.com).
-- Dominio registrado (en Cloudflare Registrar a precio de coste, o en Porkbun/Namecheap).
 - Node.js 18+ instalado localmente.
+- `wrangler` instalado (`brew install wrangler` o `npm i -g wrangler`) y autenticado (`wrangler login`).
+  Comprueba la sesión con `wrangler whoami`; hace falta el permiso `pages (write)`.
 
-## Paso 1 — Probar local (2 min)
+## Publicar un cambio
+
+Los dos únicos comandos que importan:
 
 ```bash
 cd ~/git_projects/vedic-library
-npm install
-npm run dev
+npm run build
+wrangler pages deploy dist --project-name=vedic-library --branch=main
 ```
 
-Abre <http://localhost:4321>. Debes ver la Library con una tarjeta por libro: *Bhagavad-gītā As It Is* y *Stolen Words*.
-Navega a `/bhagavad-gita-en/06-chapter-01` para verificar el lector completo.
+`npm run build` genera `dist/` **y** el índice de búsqueda Pagefind dentro de `dist/pagefind/`.
+Por eso siempre se despliega `dist/` completo y nunca hace falta subir el índice aparte.
 
-Cuando estés conforme, prueba el build de producción (incluye índice Pagefind):
+Wrangler responde con dos URLs: la del deploy concreto (`https://<hash>.vedic-library.pages.dev`,
+útil para revisar antes de dar por bueno el cambio) y la de producción, que se actualiza sola.
+
+El commit y el push a GitHub siguen siendo recomendables para tener historial, pero son
+independientes del deploy:
+
+```bash
+git add <ficheros>
+git commit -m "…"
+git push origin main
+```
+
+## Probar en local antes de publicar
+
+```bash
+npm run dev        # http://localhost:4321
+```
+
+La búsqueda no funciona con `npm run dev` — Pagefind solo se construye en producción.
+Si dice *"Search index not available yet. Build the site to enable."*, es lo esperado.
+Para probarla en local:
 
 ```bash
 npm run build
 npm run preview
 ```
 
-## Paso 2 — Subir a GitHub (3 min)
+## Verificaciones después de publicar
+
+- `https://vedic-library.pages.dev/` → Library, **una tarjeta por libro** (no una por idioma),
+  con las etiquetas de idioma disponibles en cada tarjeta.
+- `https://vedic-library.pages.dev/bhagavad-gita-en/06-chapter-01` → lector completo:
+  cabecera, prev/next, índice lateral, pantalla completa y búsqueda.
+- El selector de idioma de ese capítulo ofrece EN · ES · PT · हि · РУ y lleva **al mismo capítulo**,
+  no a la portada.
+- `https://vedic-library.pages.dev/bhagavad-gita-hi/03-preface` → sección sin traducir:
+  muestra el texto inglés con el aviso en el idioma del lector.
+- El sitemap apunta al dominio correcto:
+  `curl -s https://vedic-library.pages.dev/sitemap-0.xml | head`.
+
+### Ojo con la caché del edge
+
+Un URL que deja de existir puede seguir respondiendo desde la caché de Cloudflare durante
+un buen rato. Para saber si estás viendo el deploy nuevo o una copia cacheada:
 
 ```bash
-cd ~/git_projects/vedic-library
-git init
-git add .
-git commit -m "Initial commit"
-gh repo create vedic-library --public --source=. --remote=origin --push
+curl -sI https://vedic-library.pages.dev/<ruta>/ | grep -i "cf-cache-status\|age"
+curl -sL "https://vedic-library.pages.dev/<ruta>/?v=$(date +%s)"   # salta la caché
 ```
 
-(Si no usas `gh`: crea el repo manualmente en github.com y luego `git remote add origin … && git push -u origin main`.)
+Si sale `cf-cache-status: HIT` con un `age` alto, es caché, no el deploy. Como `pages.dev`
+no es una zona propia, no hay purga por API: o esperas a que caduque, o la fuerzas desde
+el panel de Cloudflare.
 
-## Paso 3 — Conectar a Cloudflare Pages (3 min)
+## Cambiar a deploy automático (opcional)
 
-1. Cloudflare Dashboard → **Workers & Pages** → **Create** → **Pages** → **Connect to Git**.
-2. Autoriza GitHub y selecciona el repo `vedic-library`.
+Si prefieres que cada `git push` publique solo:
+
+1. Cloudflare Dashboard → **Workers & Pages** → `vedic-library` → **Settings** →
+   **Builds & deployments** → **Connect to Git**.
+2. Autoriza GitHub y selecciona `juanmanuelferrera/vedic-library`.
 3. Configuración del build:
    - **Framework preset:** `Astro`
    - **Build command:** `npm run build`
    - **Build output directory:** `dist`
    - **Root directory:** *(vacío)*
    - **Node version:** `20`
-4. **Save and Deploy.** Cloudflare construye el sitio y te da una URL del estilo `vedic-library.pages.dev`.
 
-A partir de aquí, cada `git push` en la rama `main` redespliega el sitio automáticamente.
+A partir de ahí, `wrangler pages deploy` deja de hacer falta y esta guía se queda obsoleta
+en su parte principal.
 
-## Paso 4 — Conectar tu dominio (2 min)
+## Dominio propio (opcional)
 
-Opcional: el sitio ya funciona en `vedic-library.pages.dev`. Si quieres un dominio propio,
-en el dashboard del proyecto en Pages:
+En el panel del proyecto → **Custom domains** → **Set up a custom domain**. Si el dominio ya
+está en Cloudflare, los CNAME se configuran solos; si está en otro registrador, Cloudflare te
+dice cuál añadir. El certificado SSL se emite en 1–5 minutos.
 
-1. **Custom domains** → **Set up a custom domain**.
-2. Escribe tu dominio y confirma.
-3. Si el dominio ya está en Cloudflare, todo se configura automáticamente (registros CNAME).
-4. Si está en otro registrador, Cloudflare te dirá qué CNAME añadir.
-
-El certificado SSL gratuito se emite solo en 1–5 minutos.
-
-## Paso 5 — Pagefind (búsqueda)
-
-El comando `npm run build` ya genera el índice Pagefind en `dist/pagefind/`.
-Cloudflare lo sirve igual que el resto. La búsqueda funciona en producción sin más configuración.
-
-Si abriendo localmente con `npm run dev` la búsqueda dice *"Search index not available yet. Build the site to enable."*, es esperado — Pagefind solo se construye con `npm run build`. Usa `npm run preview` para probarlo localmente con el índice ya generado.
-
-## Paso 6 — Verificaciones rápidas
-
-- `https://vedic-library.pages.dev/` → Library, una tarjeta por libro.
-- `https://vedic-library.pages.dev/bhagavad-gita-en` → Cover.
-- `https://vedic-library.pages.dev/bhagavad-gita-en/06-chapter-01` → Lector con header, prev/next, drawer, fullscreen, search.
-- El selector de idioma de ese capítulo debe ofrecer EN · ES · PT · हि · РУ y llevar al mismo capítulo.
-- `https://vedic-library.pages.dev/stolen-words-en/04-the-sacred-gift#bg-2-13` → Permalink directo a una evidencia "Before / After".
+Al cambiar de dominio hay que actualizar también `site` en `astro.config.mjs` — de ahí salen
+las URLs canónicas y el sitemap, y si apunta a un dominio que no resuelve, los buscadores
+reciben una dirección muerta.
 
 ## Mantenimiento
 
-- **Añadir un capítulo:** crea un `.mdx` en `src/content/books/<libro>-<idioma>/`, `git push`. Live en 30 s.
-- **Añadir una traducción:** copia el directorio entero a `<libro>-<idioma>/`, ajusta `book.json` (`id`, `lang`, títulos) y mantén el mismo `order` en cada capítulo. El selector de idioma la detecta sola.
-- **Cambiar el estilo:** edita `src/styles/writebook.css` y/o `src/styles/themes.css`.
-- **Editar un icono:** sustituye el archivo en `public/icons/`. El cambio aplica al instante en toda la app gracias al `mask-image`.
+- **Añadir un capítulo:** crea un `.mdx` en `src/content/books/<libro>-<idioma>/` con
+  `title`, `order` y `book` en el frontmatter. No pongas un `# Título` en el cuerpo: la
+  plantilla ya imprime el título y saldría duplicado.
+- **Añadir una traducción:** copia el directorio a `<libro>-<idioma>/`, ajusta `book.json`
+  (`id`, `lang`, títulos) y **mantén el mismo `order` en cada capítulo** — es lo que usa el
+  selector para emparejar secciones entre idiomas. Las secciones que falten mostrarán el
+  inglés automáticamente.
+- **Idioma nuevo en el selector:** añádelo a `LANGS` en `src/lib/books.ts` para darle
+  etiqueta y posición.
+- **Cambiar el estilo:** `src/styles/writebook.css` y/o `src/styles/themes.css`.
+- **Editar un icono:** sustituye el archivo en `public/icons/`; el cambio se aplica en toda
+  la app gracias al `mask-image`.
 
-## Coste mensual real
+## Coste real
 
 | Concepto | Coste |
 |---|---|
-| Cloudflare Pages | **0 €** (incluye 500 builds/mes y ancho de banda ilimitado) |
-| Dominio propio (opcional) | ~10 €/año = **~0,83 €/mes** |
+| Cloudflare Pages | **0 €** (500 builds/mes, ancho de banda ilimitado) |
 | GitHub público | **0 €** |
+| Dominio propio (opcional) | ~10 €/año |
 | **Total** | **0 €** (o ~10 €/año con dominio propio) |
 
-Si algún día el sitio recibe un pico de tráfico (millones de lectores), sigue siendo 0 € extra.
+Un pico de tráfico no cambia la factura.

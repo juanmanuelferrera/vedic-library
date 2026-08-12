@@ -86,7 +86,16 @@ automatically, showing the English edition and listing the languages available.
 
 ## Deploy
 
-See [DEPLOY.md](DEPLOY.md). Every push to `main` redeploys.
+This project is **not** connected to Git on Cloudflare — pushing does not publish anything.
+Deploys are direct uploads:
+
+```bash
+npm run build
+wrangler pages deploy dist --project-name=vedic-library --branch=main
+```
+
+See [DEPLOY.md](DEPLOY.md) for the full procedure, verification steps, and how to switch to
+automatic deploys if you'd rather push and forget.
 
 ## License
 
