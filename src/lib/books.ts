@@ -37,10 +37,45 @@ export async function getChapter(bookId: string, slug: string) {
 }
 
 /**
+ * The sections a book actually shows, which is not the same as the files it has.
+ * A translation that is missing a section still lists it, falling back to the
+ * English text, so the table of contents is the same in every language and a
+ * reader switching language never lands somewhere unrelated.
+ *
+ * Returns `{ entry, fallback }`, where `fallback` marks an entry served from
+ * English because this language has no translation of it yet.
+ */
+export async function getSections(bookId: string) {
+  const book = await getBook(bookId);
+  if (!book) return [];
+
+  const own = await getChapters(bookId);
+  if (book.lang === 'en') return own.map(entry => ({ entry, fallback: false }));
+
+  const books = await getBooks();
+  const base = seriesId(bookId, book.lang);
+  const english = books.find(b => b.lang === 'en' && seriesId(b.id, b.lang) === base);
+  if (!english) return own.map(entry => ({ entry, fallback: false }));
+
+  const mine = new Map(own.map(c => [c.data.order, c]));
+  const sections = (await getChapters(english.id)).map(ref => {
+    const local = mine.get(ref.data.order);
+    return local ? { entry: local, fallback: false } : { entry: ref, fallback: true };
+  });
+
+  // Anything this language has that English does not keeps its place.
+  const covered = new Set(sections.map(s => s.entry.data.order));
+  for (const c of own) {
+    if (!covered.has(c.data.order)) sections.push({ entry: c, fallback: false });
+  }
+  return sections.sort((a, b) => a.entry.data.order - b.entry.data.order);
+}
+
+/**
  * Build neighbouring (prev/next) chapter refs.
  */
 export async function getNeighbours(bookId: string, currentSlug: string) {
-  const chapters = await getChapters(bookId);
+  const chapters = (await getSections(bookId)).map(s => s.entry);
   const i = chapters.findIndex(c => chapterSlug(c.id) === currentSlug);
   return {
     prev: i > 0 ? chapters[i - 1] : null,
@@ -119,9 +154,9 @@ export async function getLangSiblings(currentBookId: string, currentOrder: numbe
     if (seriesId(b.id, b.lang) !== base) continue;
     let href = `/${b.id}`;
     if (currentOrder !== null) {
-      const chapters = await getChapters(b.id);
-      const match = chapters.find(c => c.data.order === currentOrder);
-      if (match) href = `/${b.id}/${chapterSlug(match.id)}`;
+      const sections = await getSections(b.id);
+      const match = sections.find(s => s.entry.data.order === currentOrder);
+      if (match) href = `/${b.id}/${chapterSlug(match.entry.id)}`;
     }
     siblings.push({
       lang: b.lang,

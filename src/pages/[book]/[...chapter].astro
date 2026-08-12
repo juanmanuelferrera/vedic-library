@@ -3,26 +3,33 @@ import { render } from 'astro:content';
 import ReaderLayout from '../../layouts/ReaderLayout.astro';
 import PrevNext from '../../components/PrevNext.astro';
 import BuyTeaser from '../../components/BuyTeaser.astro';
-import { getBooks, getBook, getChapters, getChapter, getNeighbours, chapterSlug, getLangSiblings } from '../../lib/books';
+import { getBooks, getSections, getNeighbours, chapterSlug, getLangSiblings } from '../../lib/books';
 
 export async function getStaticPaths() {
   const books = await getBooks();
   const paths = [];
   for (const b of books) {
-    const chapters = await getChapters(b.id);
-    for (const c of chapters) {
+    for (const { entry, fallback } of await getSections(b.id)) {
       paths.push({
-        params: { book: b.id, chapter: chapterSlug(c.id) },
-        props: { entry: c, bookMeta: b },
+        params: { book: b.id, chapter: chapterSlug(entry.id) },
+        props: { entry, bookMeta: b, fallback },
       });
     }
   }
   return paths;
 }
 
-const { entry, bookMeta } = Astro.props;
+// Shown when this language has no translation of the section yet.
+const UNTRANSLATED: Record<string, string> = {
+  es: 'Esta sección todavía no está traducida al español. Se muestra en inglés.',
+  pt: 'Esta seção ainda não está traduzida para o português. É exibida em inglês.',
+  hi: 'यह अनुभाग अभी हिन्दी में अनूदित नहीं है। इसे अंग्रेज़ी में दिखाया गया है।',
+  ru: 'Этот раздел ещё не переведён на русский язык. Он показан на английском.',
+};
+
+const { entry, bookMeta, fallback } = Astro.props;
 const { book: bookId, chapter: currentSlug } = Astro.params;
-const chapters = await getChapters(bookId!);
+const chapters = (await getSections(bookId!)).map(s => s.entry);
 const { prev, next, index, total } = await getNeighbours(bookId!, currentSlug!);
 const langs = await getLangSiblings(bookId!, entry.data.order);
 
@@ -38,6 +45,11 @@ const { Content } = await render(entry);
   langs={langs}
 >
   <h1>{entry.data.title}</h1>
+  {fallback && (
+    <p class="untranslated" lang={bookMeta.lang}>
+      {UNTRANSLATED[bookMeta.lang] ?? 'This section is not translated yet. It is shown in English.'}
+    </p>
+  )}
   <Content />
   {!next && <BuyTeaser lang={bookMeta.lang} />}
   <PrevNext bookId={bookMeta.id} prev={prev} next={next} />
