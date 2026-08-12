@@ -151,6 +151,20 @@ const { bookId, bookTitle, bookLang, pageTitle, chapters, currentSlug, langs = [
             document.body.classList.toggle('is-fullscreen', !!document.fullscreenElement);
           });
 
+          // The router copies the incoming <html> attributes over the current
+          // ones, which would wipe the type and theme settings the head script
+          // applied. Write them onto the incoming document before the swap, so
+          // they are already right when it lands and nothing flashes.
+          document.addEventListener('astro:before-swap', function (e) {
+            var d = e.newDocument.documentElement;
+            ['theme', 'font', 'size', 'justify'].forEach(function (k) {
+              try {
+                var v = localStorage.getItem('wb-' + k);
+                if (v) d.dataset[k] = v;
+              } catch (err) {}
+            });
+          });
+
           // Keyboard shortcuts: c, s, f, Escape, ← →
           window.addEventListener('keydown', function (e) {
             var t = e.target;

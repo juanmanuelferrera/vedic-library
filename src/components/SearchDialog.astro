@@ -27,36 +27,30 @@
 
 <script is:inline>
   (function () {
-    var dlg = document.getElementById('search-dialog');
-    var openBtn = document.getElementById('open-search');
-    var closeBtn = document.getElementById('search-close');
-    var form = document.getElementById('search-form');
-    var input = document.getElementById('search-input');
-    var results = document.getElementById('search-results');
-    if (!dlg || !openBtn) return;
+    // The dialog and its buttons are replaced on every client-side navigation,
+    // so look them up per call and rebind on each swap rather than capturing
+    // them once — a captured node would be detached after the first chapter.
+    function el(id) { return document.getElementById(id); }
 
     function open() {
-      if (typeof dlg.showModal === 'function') dlg.showModal();
+      var dlg = el('search-dialog');
+      if (!dlg) return;
+      if (typeof dlg.showModal === 'function' && !dlg.open) dlg.showModal();
       else dlg.setAttribute('open', '');
-      setTimeout(function () { input && input.focus(); }, 30);
+      setTimeout(function () { var i = el('search-input'); i && i.focus(); }, 30);
     }
     function close() {
+      var dlg = el('search-dialog');
+      if (!dlg) return;
       if (typeof dlg.close === 'function') dlg.close();
       else dlg.removeAttribute('open');
     }
 
-    openBtn.addEventListener('click', open);
-    if (closeBtn) closeBtn.addEventListener('click', close);
-    dlg.addEventListener('click', function (e) {
-      if (e.target === dlg) close();
-    });
-    window.addEventListener('keydown', function (e) {
-      if (e.key === '/' && document.activeElement && document.activeElement.tagName !== 'INPUT') {
-        e.preventDefault();
-        open();
-      }
-      if (e.key === 'Escape') close();
-    });
+    function once(node, ev, fn, mark) {
+      if (!node || node.dataset[mark]) return;
+      node.dataset[mark] = '1';
+      node.addEventListener(ev, fn);
+    }
 
     // Live results via Pagefind (loaded lazily, only if available).
     var pf = null;
@@ -72,7 +66,10 @@
     }
 
     var timer = null;
-    input && input.addEventListener('input', function () {
+    function onInput() {
+      var input = el('search-input');
+      var results = el('search-results');
+      if (!input || !results) return;
       var q = input.value.trim();
       if (!q) { results.hidden = true; results.innerHTML = ''; return; }
       if (timer) clearTimeout(timer);
@@ -101,6 +98,33 @@
           });
         });
       }, 160);
-    });
+    }
+
+    function bindSearch() {
+      once(el('open-search'), 'click', open, 'wbSearchOpen');
+      once(el('search-close'), 'click', close, 'wbSearchClose');
+      once(el('search-dialog'), 'click', function (e) {
+        if (e.target === el('search-dialog')) close();
+      }, 'wbSearchBackdrop');
+      once(el('search-input'), 'input', onInput, 'wbSearchInput');
+      // Submitting would navigate to /search, which does not exist; results
+      // are live as you type.
+      once(el('search-form'), 'submit', function (e) { e.preventDefault(); }, 'wbSearchSubmit');
+    }
+
+    if (!window.__wbSearchGlobals) {
+      window.__wbSearchGlobals = true;
+      window.addEventListener('keydown', function (e) {
+        var a = document.activeElement;
+        if (e.key === '/' && a && a.tagName !== 'INPUT' && a.tagName !== 'TEXTAREA') {
+          e.preventDefault();
+          open();
+        }
+        if (e.key === 'Escape') close();
+      });
+      document.addEventListener('astro:page-load', bindSearch);
+    }
+
+    bindSearch();
   })();
 </script>
