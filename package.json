@@ -1,9 +1,9 @@
 {
-  "name": "stolen-words",
+  "name": "vedic-library",
   "type": "module",
   "version": "0.1.0",
   "private": true,
-  "description": "A Writebook-style book reader for Stolen Words, built in Astro.",
+  "description": "A Writebook-style multi-book reader for the Vedic Library, built in Astro.",
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",

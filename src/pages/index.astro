@@ -2,16 +2,17 @@
 import '../styles/reset.css';
 import '../styles/themes.css';
 import '../styles/writebook.css';
-import { getBooks } from '../lib/books';
+import { getLibrary } from '../lib/books';
 
-const books = await getBooks();
+const books = await getLibrary();
 ---
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Library — Stolen Words</title>
+    <title>Vedic Library</title>
+    <meta name="description" content="A small library of books, free to read. Each book here is the original — verified and unaltered." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,700&family=Inter:wght@400;600&display=swap" rel="stylesheet" />
@@ -34,9 +35,11 @@ const books = await getBooks();
       <div class="books">
         {books.map(b => (
           <a class="book" href={`/${b.id}`}>
-            <span class="lang">{b.lang}</span>
             <h3>{b.title}</h3>
             {b.subtitle && <p>{b.subtitle}</p>}
+            <span class="langs" aria-label={`Available in ${b.langs.length} languages`}>
+              {b.langs.map(l => <span class="lang-tag" lang={l.lang}>{l.label}</span>)}
+            </span>
           </a>
         ))}
       </div>

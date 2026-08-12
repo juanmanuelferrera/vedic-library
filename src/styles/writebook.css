@@ -1,5 +1,5 @@
 /* ============================================================
-   Stolen Words — Writebook-faithful styles
+   Vedic Library — Writebook-faithful styles
    Mirrors classics.37signals.com Writebook:
    - System sans-serif default (NOT serif)
    - Circular icon buttons, pill nav button
@@ -694,13 +694,22 @@ html[data-justify="on"] article p { text-align: justify; hyphens: auto; }
   transform: translateY(-2px);
   box-shadow: var(--panel-shadow);
 }
-.library .book .lang {
-  display: inline-block;
-  font-size: 0.7rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+.library .book .langs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35em;
+  margin-top: 0.9em;
+}
+.library .book .lang-tag {
+  font-family: var(--font-sans);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
   color: var(--muted);
-  margin-bottom: 0.5em;
+  border: 1px solid var(--rule);
+  border-radius: var(--pill-radius);
+  padding: 0.18em 0.5em;
+  line-height: 1.5;
 }
 .library .book h3 {
   font-size: 1.2rem;

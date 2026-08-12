@@ -78,6 +78,29 @@ function seriesId(id: string, lang: string): string {
 }
 
 /**
+ * One entry per book for the library index: the English edition stands in
+ * for the whole series, and the other languages are reached from inside the
+ * book via the switcher. Falls back to the first available edition for a
+ * series with no English translation.
+ */
+export async function getLibrary() {
+  const books = await getBooks();
+  const series = new Map<string, typeof books>();
+  for (const b of books) {
+    const key = seriesId(b.id, b.lang);
+    series.set(key, [...(series.get(key) ?? []), b]);
+  }
+
+  return [...series.values()].map(editions => {
+    const primary = editions.find(b => b.lang === 'en') ?? editions[0];
+    const langs = editions
+      .map(b => ({ lang: b.lang, label: LANGS[b.lang]?.label ?? b.lang.toUpperCase() }))
+      .sort((a, c) => (LANGS[a.lang]?.rank ?? 99) - (LANGS[c.lang]?.rank ?? 99));
+    return { ...primary, langs };
+  });
+}
+
+/**
  * Build the language-sibling list for the current book/chapter.
  * Matches sibling books by series id, then picks the chapter in each
  * sibling that shares the same `order`.
