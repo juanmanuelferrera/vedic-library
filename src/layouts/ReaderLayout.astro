@@ -7,7 +7,6 @@ import ContentsDrawer from '../components/ContentsDrawer.astro';
 import SettingsDrawer from '../components/SettingsDrawer.astro';
 import SearchDialog from '../components/SearchDialog.astro';
 import ReadingProgress from '../components/ReadingProgress.astro';
-import { ClientRouter } from 'astro:transitions';
 
 interface LangSibling {
   lang: string;
@@ -33,9 +32,6 @@ const { bookId, bookTitle, bookLang, pageTitle, chapters, currentSlug, langs = [
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>{pageTitle} · {bookTitle}</title>
-    {/* Client-side routing: a real page load drops fullscreen, so without this
-        a reader in fullscreen cannot reach the next chapter. */}
-    <ClientRouter />
     <script is:inline>
       (function () {
         var html = document.documentElement;
@@ -73,6 +69,20 @@ const { bookId, bookTitle, bookLang, pageTitle, chapters, currentSlug, langs = [
         // element has to be bound again on each swap. Marking the element keeps
         // that idempotent; window/document listeners are attached once, since
         // those objects survive navigation.
+        // Must match the defaults in the head script. The theme tokens live
+        // under html[data-theme=…]; leaving the attribute off leaves --bg
+        // undefined, which shows up as transparent drawers, so every key is
+        // always written, whether or not the reader ever chose one.
+        var PREFS = { theme: 'light', font: 'sans', size: '4', justify: 'off' };
+
+        function applyPrefs(html) {
+          Object.keys(PREFS).forEach(function (k) {
+            var v = PREFS[k];
+            try { v = localStorage.getItem('wb-' + k) || v; } catch (e) {}
+            html.dataset[k] = v;
+          });
+        }
+
         function once(el, ev, fn, mark) {
           if (!el || el.dataset[mark]) return;
           el.dataset[mark] = '1';
@@ -123,14 +133,8 @@ const { bookId, bookTitle, bookLang, pageTitle, chapters, currentSlug, langs = [
           // still genuinely fullscreen — restore it so the chrome stays hidden.
           document.body.classList.toggle('is-fullscreen', !!document.fullscreenElement);
 
-          // The <html> dataset can be reset by a swap; reapply the saved prefs.
-          var html = document.documentElement;
-          ['theme', 'font', 'size', 'justify'].forEach(function (k) {
-            try {
-              var v = localStorage.getItem('wb-' + k);
-              if (v) html.dataset[k] = v;
-            } catch (e) {}
-          });
+          // Belt and braces: before-swap should have handled it already.
+          applyPrefs(document.documentElement);
 
           document.querySelectorAll('[data-setting] button').forEach(function (b) {
             once(b, 'click', function () {
@@ -151,19 +155,6 @@ const { bookId, bookTitle, bookLang, pageTitle, chapters, currentSlug, langs = [
             document.body.classList.toggle('is-fullscreen', !!document.fullscreenElement);
           });
 
-          // The router copies the incoming <html> attributes over the current
-          // ones, which would wipe the type and theme settings the head script
-          // applied. Write them onto the incoming document before the swap, so
-          // they are already right when it lands and nothing flashes.
-          document.addEventListener('astro:before-swap', function (e) {
-            var d = e.newDocument.documentElement;
-            ['theme', 'font', 'size', 'justify'].forEach(function (k) {
-              try {
-                var v = localStorage.getItem('wb-' + k);
-                if (v) d.dataset[k] = v;
-              } catch (err) {}
-            });
-          });
 
           // Keyboard shortcuts: c, s, f, Escape, ← →
           window.addEventListener('keydown', function (e) {
@@ -208,8 +199,6 @@ const { bookId, bookTitle, bookLang, pageTitle, chapters, currentSlug, langs = [
             document.querySelector(sel)?.click();
           }, { passive: true });
 
-          // Fires on first load and after every client-side navigation.
-          document.addEventListener('astro:page-load', bindPage);
         }
 
         bindPage();
