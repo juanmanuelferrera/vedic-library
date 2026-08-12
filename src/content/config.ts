@@ -25,6 +25,8 @@ const bookMeta = defineCollection({
     description: z.string(),
     license: z.string().optional(),
     publishedAt: z.string().optional(),
+    /** Source credit, in markdown link syntax. Rendered on the book cover. */
+    credit: z.string().optional(),
   }),
 });
 

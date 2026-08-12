@@ -2,7 +2,7 @@
 import '../../styles/reset.css';
 import '../../styles/themes.css';
 import '../../styles/writebook.css';
-import { getBooks, getBook, getSections, chapterSlug, getLangSiblings } from '../../lib/books';
+import { getBooks, getBook, getSections, chapterSlug, getLangSiblings, creditHtml } from '../../lib/books';
 
 export async function getStaticPaths() {
   const books = await getBooks();
@@ -67,6 +67,7 @@ const startLabel = startCta[book.lang] ?? startCta.en;
       <h1>{book.title}</h1>
       {book.subtitle && <p class="subtitle">{book.subtitle}</p>}
       <a class="start" href={`/${bookId}/${startSlug}`}>{startLabel}</a>
+      {book.credit && <p class="credit" set:html={creditHtml(book.credit)} />}
     </section>
   </body>
 </html>

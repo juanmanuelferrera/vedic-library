@@ -93,6 +93,21 @@ export function chapterSlug(id: string): string {
   return last.replace(/\.(md|mdx)$/, '');
 }
 
+/**
+ * Render a book's `credit` field to HTML. Accepts only markdown links —
+ * `[text](https://host)` — and escapes everything else, so a credit string
+ * cannot inject markup into the page.
+ */
+export function creditHtml(credit: string): string {
+  const escape = (s: string) =>
+    s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+     .replace(/"/g, '&quot;');
+  return escape(credit).replace(
+    /\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,
+    (_, text, href) => `<a href="${href}" rel="noopener">${text}</a>`
+  );
+}
+
 /** Display order and button label for each language we publish in. */
 const LANGS: Record<string, { rank: number; label: string }> = {
   en: { rank: 1, label: 'EN' },

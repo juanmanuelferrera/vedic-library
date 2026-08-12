@@ -694,6 +694,20 @@ html[data-justify="on"] article p { text-align: justify; hyphens: auto; }
   transform: translateY(-2px);
   box-shadow: var(--panel-shadow);
 }
+/* Source credit on a book cover */
+.cover-page .credit {
+  margin-top: 2.5rem;
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+.cover-page .credit a {
+  color: var(--muted);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.cover-page .credit a:hover { color: var(--fg); }
+
 /* Marker in the contents for a section served in English */
 .drawer.contents .toc-en {
   display: inline-block;
