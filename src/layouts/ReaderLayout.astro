@@ -95,12 +95,6 @@ const { bookId, bookTitle, bookLang, pageTitle, chapters, currentSlug, langs = [
           });
         }
 
-        function toggleFullscreen() {
-          if (!document.fullscreenElement) {
-            document.documentElement.requestFullscreen().catch(function () {});
-          } else {
-            document.exitFullscreen();
-          }
         }
 
         function refreshActiveStates() {
@@ -127,11 +121,7 @@ const { bookId, bookTitle, bookLang, pageTitle, chapters, currentSlug, langs = [
             once(overlay, 'click', closeDrawers, 'wbClose');
           });
 
-          once(document.getElementById('toggle-fullscreen'), 'click', toggleFullscreen, 'wbFs');
 
-          // The swapped-in body does not carry the class, but the document is
-          // still genuinely fullscreen — restore it so the chrome stays hidden.
-          document.body.classList.toggle('is-fullscreen', !!document.fullscreenElement);
 
           // Belt and braces: before-swap should have handled it already.
           applyPrefs(document.documentElement);
@@ -151,19 +141,15 @@ const { bookId, bookTitle, bookLang, pageTitle, chapters, currentSlug, langs = [
         if (!window.__wbGlobals) {
           window.__wbGlobals = true;
 
-          document.addEventListener('fullscreenchange', function () {
-            document.body.classList.toggle('is-fullscreen', !!document.fullscreenElement);
-          });
 
 
-          // Keyboard shortcuts: c, s, f, Escape, ← →
+          // Keyboard shortcuts: c, s, Escape, ← →
           window.addEventListener('keydown', function (e) {
             var t = e.target;
             if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return;
             if (e.key === 'Escape') closeDrawers();
             if (e.key === 'c') document.getElementById('open-contents')?.click();
             if (e.key === 's') document.getElementById('open-settings')?.click();
-            if (e.key === 'f') toggleFullscreen();
             if (e.key === 'ArrowLeft') document.querySelector('.prev-next .prev-pill')?.click();
             if (e.key === 'ArrowRight') document.querySelector('.prev-next .next-pill')?.click();
           });
