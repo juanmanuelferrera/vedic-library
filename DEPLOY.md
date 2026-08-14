@@ -60,8 +60,12 @@ npm run preview
   cabecera, prev/next, índice lateral, pantalla completa y búsqueda.
 - El selector de idioma de ese capítulo ofrece EN · ES · PT · हि · РУ y lleva **al mismo capítulo**,
   no a la portada.
-- `https://vedic-library.pages.dev/bg-hi/bhumika` → sección sin traducir:
-  muestra el texto inglés con el aviso en el idioma del lector.
+- La cabecera del lector trae tres botones: índice, **Aa** (ajustes de lectura) y
+  buscar. El de ajustes es el único acceso al tamaño de texto en móvil, donde no
+  hay teclado para pulsar `s`.
+- Ninguna sección muestra el aviso de "sin traducir": los cinco idiomas del Gita
+  están completos. Si alguna vez falta una, `getSections()` sirve el inglés con
+  aviso y marca `EN` en el índice — no hay que hacer nada a mano.
 - El sitemap apunta al dominio correcto:
   `curl -s https://vedic-library.pages.dev/sitemap-0.xml | head`.
 
@@ -109,8 +113,10 @@ reciben una dirección muerta.
 ## Mantenimiento
 
 - **Añadir un capítulo:** crea un `.mdx` en `src/content/books/<libro>-<idioma>/` con
-  `title`, `order` y `book` en el frontmatter. No pongas un `# Título` en el cuerpo: la
-  plantilla ya imprime el título y saldría duplicado.
+  `title`, `order` y `book` en el frontmatter. **El nombre del fichero es la URL** —
+  `19.mdx` se sirve en `/bg-es/19` — y no influye en el orden; de eso se encarga
+  `order`. No pongas un `# Título` en el cuerpo: la plantilla ya imprime el título
+  y saldría duplicado.
 - **Añadir una traducción:** copia el directorio a `<libro>-<idioma>/`, ajusta `book.json`
   (`id`, `lang`, títulos) y **mantén el mismo `order` en cada capítulo** — es lo que usa el
   selector para emparejar secciones entre idiomas. Las secciones que falten mostrarán el
