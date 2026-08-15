@@ -196,6 +196,30 @@ const { bookId, bookTitle, bookLang, pageTitle, chapters, currentSlug, langs = [
         }
 
         bindPage();
+
+        // Arriving from a search result: mark the matches and scroll to the
+        // first one, so the reader lands on the word rather than the page top.
+        (function highlightFromSearch() {
+          var q = new URLSearchParams(location.search).get('highlight');
+          if (!q) return;
+          var s = document.createElement('script');
+          s.src = '/pagefind/pagefind-highlight.js';
+          s.onload = function () {
+            try {
+              new window.PagefindHighlight({
+                highlightParam: 'highlight',
+                markContext: 'article',
+                // Set explicitly: the library's own default is
+                // "pagefind__highlight", which our stylesheet does not target.
+                className: 'pagefind-highlight',
+                addStyles: false   // styled in writebook.css so it follows the theme
+              });
+            } catch (e) { return; }
+            var first = document.querySelector('mark.pagefind-highlight');
+            if (first) first.scrollIntoView({ block: 'center' });
+          };
+          document.head.appendChild(s);
+        })();
       })();
     </script>
   </body>

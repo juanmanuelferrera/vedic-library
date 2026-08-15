@@ -90,7 +90,10 @@
                 }
                 results.hidden = false;
                 results.innerHTML = items.map(function (it) {
-                  return '<a class="search-result" href="' + it.url + '">' +
+                  // Carry the query to the chapter so it can mark the matches.
+                  var href = it.url + (it.url.indexOf('?') === -1 ? '?' : '&') +
+                    'highlight=' + encodeURIComponent(q);
+                  return '<a class="search-result" href="' + href + '">' +
                     '<strong>' + (it.meta && it.meta.title ? it.meta.title : it.url) + '</strong>' +
                     '<span>' + (it.excerpt || '').slice(0, 180) + '</span></a>';
                 }).join('');

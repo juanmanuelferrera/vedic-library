@@ -142,6 +142,16 @@ html[data-justify="on"] article p { text-align: justify; hyphens: auto; }
   transition: background var(--transition), color var(--transition);
 }
 .icon-btn:hover { background: var(--fg); color: var(--bg); }
+/* Search hits, marked on the page you land on. Yellow in every theme, with
+   the text forced dark so it stays readable on the dark background too. */
+mark.pagefind-highlight {
+  background: oklch(90% 0.17 100);
+  color: oklch(20% 0 0);
+  border-radius: 2px;
+  padding: 0 0.08em;
+  scroll-margin-top: 6rem;   /* clears the fixed header when scrolled to */
+}
+
 /* Language menu — one button instead of a pill per language, so the header
    still fits on a phone. */
 .lang-menu { position: relative; }
