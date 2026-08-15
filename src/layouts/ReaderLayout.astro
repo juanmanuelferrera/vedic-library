@@ -93,6 +93,9 @@ const { bookId, bookTitle, bookLang, pageTitle, chapters, currentSlug, langs = [
           document.querySelectorAll('.drawer, .drawer-overlay').forEach(function (n) {
             n.classList.remove('open');
           });
+          document.querySelectorAll('.lang-menu[open]').forEach(function (m) {
+            m.removeAttribute('open');
+          });
         }
 
         function refreshActiveStates() {
@@ -140,6 +143,13 @@ const { bookId, bookTitle, bookLang, pageTitle, chapters, currentSlug, langs = [
           window.__wbGlobals = true;
 
 
+
+          // <details> does not close itself when you tap elsewhere.
+          document.addEventListener('click', function (e) {
+            document.querySelectorAll('.lang-menu[open]').forEach(function (m) {
+              if (!m.contains(e.target)) m.removeAttribute('open');
+            });
+          });
 
           // Keyboard shortcuts: c, s, Escape, ← →
           window.addEventListener('keydown', function (e) {

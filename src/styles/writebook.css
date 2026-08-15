@@ -142,6 +142,45 @@ html[data-justify="on"] article p { text-align: justify; hyphens: auto; }
   transition: background var(--transition), color var(--transition);
 }
 .icon-btn:hover { background: var(--fg); color: var(--bg); }
+/* Language menu — one button instead of a pill per language, so the header
+   still fits on a phone. */
+.lang-menu { position: relative; }
+.lang-menu > summary {
+  list-style: none;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 0.78em;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+.lang-menu > summary::-webkit-details-marker { display: none; }
+.lang-menu > summary::marker { content: ''; }
+.lang-pop {
+  position: absolute;
+  top: calc(100% + 0.45rem);
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 7.5rem;
+  padding: 0.3rem;
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  box-shadow: var(--panel-shadow);
+  z-index: 60;
+}
+.lang-opt {
+  padding: 0.5em 0.7em;
+  border-radius: 8px;
+  color: var(--fg);
+  text-decoration: none;
+  font-family: var(--font-sans);
+  font-size: 0.9em;
+  white-space: nowrap;
+}
+.lang-opt:hover { background: var(--bg); }
+.lang-opt.is-current { font-weight: 700; background: var(--fg); color: var(--bg); }
+
 /* The type-settings button is lettering rather than an icon */
 .icon-btn.btn-type {
   font-family: var(--font-sans);

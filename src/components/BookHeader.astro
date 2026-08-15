@@ -39,17 +39,23 @@ const { bookId, bookTitle, pageTitle, langs = [] } = Astro.props;
 
   <div class="hdr-right">
     {langs.length > 1 && (
-      <nav class="lang-switch" aria-label="Language">
-        {langs.map(l => (
-          <a
-            href={l.href}
-            class:list={['lang-btn', { 'is-current': l.isCurrent }]}
-            hreflang={l.lang}
-            aria-current={l.isCurrent ? 'page' : undefined}
-            title={`Read in ${l.label}`}
-          >{l.label}</a>
-        ))}
-      </nav>
+      /* <details> rather than a scripted menu: it still opens if the page's
+         JavaScript fails, so changing language never depends on it. */
+      <details class="lang-menu">
+        <summary class="icon-btn btn-lang" title="Language" aria-label="Language">
+          {langs.find(l => l.isCurrent)?.label ?? langs[0].label}
+        </summary>
+        <nav class="lang-pop" aria-label="Language">
+          {langs.map(l => (
+            <a
+              href={l.href}
+              class:list={['lang-opt', { 'is-current': l.isCurrent }]}
+              hreflang={l.lang}
+              aria-current={l.isCurrent ? 'page' : undefined}
+            >{l.label}</a>
+          ))}
+        </nav>
+      </details>
     )}
     <button class="icon-btn btn-type" id="open-settings" aria-label="Reading settings (s)" title="Reading settings">Aa</button>
     <button class="icon-btn" id="open-search" aria-label="Search (/)" title="Search">
