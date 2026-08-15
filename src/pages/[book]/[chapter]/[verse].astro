@@ -1,0 +1,86 @@
+---
+import { createMarkdownProcessor } from '@astrojs/markdown-remark';
+import ReaderLayout from '../../../layouts/ReaderLayout.astro';
+import { getBooks, getSections, getLangSiblings, chapterSlug, parseVerses } from '../../../lib/books';
+
+export async function getStaticPaths() {
+  const books = await getBooks();
+  const paths = [];
+  for (const b of books) {
+    // Flatten the whole book first, so the last verse of a chapter leads into
+    // the first of the next one and a reader can swipe straight through.
+    const flat = [];
+    for (const { entry } of await getSections(b.id)) {
+      const verses = parseVerses(entry.body ?? '');
+      if (!verses.length) continue;
+      const chapter = chapterSlug(entry.id);
+      verses.forEach((v, i) => flat.push({
+        v, chapter, entry, position: i + 1, total: verses.length,
+      }));
+    }
+
+    flat.forEach((item, i) => {
+      const step = (n) => n
+        ? { ref: n.v.ref, href: `/${b.id}/${n.chapter}/${n.v.slug}` }
+        : null;
+      paths.push({
+        params: { book: b.id, chapter: item.chapter, verse: item.v.slug },
+        props: {
+          verse: item.v,
+          bookMeta: b,
+          chapterTitle: item.entry.data.title,
+          order: item.entry.data.order,
+          prev: step(flat[i - 1]),
+          next: step(flat[i + 1]),
+          position: item.position,
+          total: item.total,
+        },
+      });
+    });
+  }
+  return paths;
+}
+
+const { verse, bookMeta, chapterTitle, order, prev, next, position, total } = Astro.props;
+const { book: bookId, chapter } = Astro.params;
+
+// The verse bodies are plain markdown cut out of the chapter file, so they are
+// rendered here rather than by the content pipeline.
+const processor = await createMarkdownProcessor({});
+const { code } = await processor.render(verse.body);
+
+const sections = await getSections(bookId!);
+const chapters = sections.map(s => s.entry);
+const fallbackSlugs = sections.filter(s => s.fallback).map(s => chapterSlug(s.entry.id));
+const langs = await getLangSiblings(bookId!, order);
+const base = `/${bookId}/${chapter}`;
+---
+<ReaderLayout
+  bookId={bookMeta.id}
+  bookTitle={bookMeta.title}
+  bookLang={bookMeta.lang}
+  pageTitle={`${chapterTitle} · ${verse.ref}`}
+  chapters={chapters}
+  currentSlug={chapter}
+  langs={langs}
+  fallbackSlugs={fallbackSlugs}
+>
+  <p class="verse-crumb"><a href={base}>{chapterTitle}</a> · {position} / {total}</p>
+  <h1>{verse.ref}</h1>
+  <Fragment set:html={code} />
+
+  <nav class="prev-next" aria-label="Page navigation">
+    {prev && (
+      <a class="pill prev-pill" href={prev.href}>
+        <span class="ico pill-arrow" style="--ico:url(/icons/arrow-left.svg); --ico-size:1em"></span>
+        <span><strong>{prev.ref}</strong></span>
+      </a>
+    )}
+    {next && (
+      <a class="pill next-pill" href={next.href}>
+        <span><strong>{next.ref}</strong></span>
+        <span class="ico pill-arrow" style="--ico:url(/icons/arrow-right.svg); --ico-size:1em"></span>
+      </a>
+    )}
+  </nav>
+</ReaderLayout>

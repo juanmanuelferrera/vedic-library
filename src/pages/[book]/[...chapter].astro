@@ -3,7 +3,7 @@ import { render } from 'astro:content';
 import ReaderLayout from '../../layouts/ReaderLayout.astro';
 import PrevNext from '../../components/PrevNext.astro';
 import BuyTeaser from '../../components/BuyTeaser.astro';
-import { getBooks, getSections, getNeighbours, chapterSlug, getLangSiblings } from '../../lib/books';
+import { getBooks, getSections, getNeighbours, chapterSlug, getLangSiblings, parseVerses } from '../../lib/books';
 
 export async function getStaticPaths() {
   const books = await getBooks();
@@ -35,6 +35,8 @@ const fallbackSlugs = sections.filter(s => s.fallback).map(s => chapterSlug(s.en
 const { prev, next, index, total } = await getNeighbours(bookId!, currentSlug!);
 const langs = await getLangSiblings(bookId!, entry.data.order);
 
+// A chapter of verses becomes an index of them; front matter still reads whole.
+const verses = parseVerses(entry.body ?? '');
 const { Content } = await render(entry);
 ---
 <ReaderLayout
@@ -53,7 +55,15 @@ const { Content } = await render(entry);
       {UNTRANSLATED[bookMeta.lang] ?? 'This section is not translated yet. It is shown in English.'}
     </p>
   )}
-  <Content />
+  {verses.length > 0 ? (
+    <ol class="verse-index">
+      {verses.map(v => (
+        <li><a href={`/${bookId}/${currentSlug}/${v.slug}`}>{v.ref}</a></li>
+      ))}
+    </ol>
+  ) : (
+    <Content />
+  )}
   {!next && <BuyTeaser lang={bookMeta.lang} />}
   <PrevNext bookId={bookMeta.id} prev={prev} next={next} />
 </ReaderLayout>

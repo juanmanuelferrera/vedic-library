@@ -142,6 +142,36 @@ html[data-justify="on"] article p { text-align: justify; hyphens: auto; }
   transition: background var(--transition), color var(--transition);
 }
 .icon-btn:hover { background: var(--fg); color: var(--bg); }
+/* Chapter page: the grid of its verses */
+.verse-index {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr));
+  gap: 0.5rem;
+}
+.verse-index a {
+  display: block;
+  padding: 0.7em 0.4em;
+  text-align: center;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  color: var(--fg);
+  text-decoration: none;
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+}
+.verse-index a:hover { background: var(--fg); color: var(--bg); }
+
+/* Verse page: which chapter, and how far in */
+.verse-crumb {
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-bottom: 0.4rem;
+}
+.verse-crumb a { color: var(--muted); }
+
 /* Search hits, marked on the page you land on. Yellow in every theme, with
    the text forced dark so it stays readable on the dark background too. */
 mark.pagefind-highlight {

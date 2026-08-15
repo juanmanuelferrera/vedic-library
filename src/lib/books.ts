@@ -86,6 +86,48 @@ export async function getNeighbours(bookId: string, currentSlug: string) {
 }
 
 /**
+ * Split a chapter body into its verses.
+ *
+ * The chapter files stay whole — the translation pipeline works on them, and
+ * splitting 3,000-odd fragments onto disk would make them uneditable — so the
+ * per-verse pages are cut from the same source at build time.
+ *
+ * A heading is "### Bg 9.2", or "### Bg 1.16-18" where the edition groups
+ * several verses under one commentary. Returns them in file order, which is
+ * numerical order.
+ */
+export interface Verse {
+  /** "9.2" or "1.16-18", as printed */
+  ref: string;
+  /** URL segment: "2" or "16-18" */
+  slug: string;
+  /** Markdown of the verse, its synonyms, translation and purport */
+  body: string;
+}
+
+const VERSE_HEADING = /^### Bg (\d+)\.([\d]+(?:[-–][\d]+)?)\s*$/gm;
+
+export function parseVerses(body: string): Verse[] {
+  const marks: { start: number; ref: string; slug: string }[] = [];
+  for (const m of body.matchAll(VERSE_HEADING)) {
+    marks.push({
+      start: m.index!,
+      ref: `${m[1]}.${m[2]}`,
+      slug: m[2].replace('–', '-'),
+    });
+  }
+  return marks.map((mk, i) => ({
+    ref: mk.ref,
+    slug: mk.slug,
+    // Drop the heading itself: the page prints the reference as its title.
+    body: body
+      .slice(mk.start, i + 1 < marks.length ? marks[i + 1].start : body.length)
+      .replace(VERSE_HEADING, '')
+      .trim(),
+  }));
+}
+
+/**
  * Convert a content id like "stolen-words-en/04-bg-2-13.mdx" -> "04-bg-2-13".
  */
 export function chapterSlug(id: string): string {
