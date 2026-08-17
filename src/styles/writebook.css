@@ -142,6 +142,26 @@ html[data-justify="on"] article p { text-align: justify; hyphens: auto; }
   transition: background var(--transition), color var(--transition);
 }
 .icon-btn:hover { background: var(--fg); color: var(--bg); }
+/* Cover: the book's table of contents, so the front matter is reachable
+   without opening a chapter first */
+.cover-contents {
+  list-style: none;
+  padding: 0;
+  margin: 3.5rem auto 0;
+  max-width: 26rem;
+  text-align: left;
+  font-family: var(--font-sans);
+}
+.cover-contents li + li { border-top: 1px solid var(--rule); }
+.cover-contents a {
+  display: block;
+  padding: 0.75em 0.2em;
+  color: var(--fg);
+  text-decoration: none;
+  font-size: 0.98rem;
+}
+.cover-contents a:hover { color: var(--accent); }
+
 /* Chapter page: the grid of its verses */
 .verse-index {
   list-style: none;
